@@ -1,4 +1,4 @@
-from BnbBasicBlock import *
+from .BnbBasicBlock import *
 
 
 class BnbFunction:
@@ -41,4 +41,4 @@ class BnbFunction:
         return bb_object_list
 
     def __repr__(self):
-        print(self.function_features)
+        return str(self.function_features)

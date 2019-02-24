@@ -24,12 +24,12 @@ class BnbBasicBlock:
         :return: (DICT) returns the basic block metadata object
         """
 
-        self.bb_metadata['outgoing_edges'] = self._basic_block.outgoing_edges
-        self.bb_metadata['incoming_edges'] = self._basic_block.incoming_edges
+        self.bb_metadata['outgoing_edges'] = len(self._basic_block.outgoing_edges)
+        self.bb_metadata['incoming_edges'] = len(self._basic_block.incoming_edges)
 
         for instruction in self._basic_block:
             # If the MLIL operation is a call instruction <MediumLevelILOperation.MLIL_CALL: 51>
-            if instruction.opeartion.value == 51:
+            if instruction.operation.value == 51:
                 # If it is a call to a constant <MediumLevelILOperation.MLIL_CONST_PTR: 14>
                 if instruction.dest.operation == 14:
                     self.bb_metadata['internal_func_calls'] += 1
@@ -43,3 +43,6 @@ class BnbBasicBlock:
                         self.bb_metadata['dynamic_func_calls'] += 1
 
         return self.bb_metadata
+
+    def __repr__(self):
+        return str(self.bb_metadata)
