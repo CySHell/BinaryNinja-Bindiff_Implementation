@@ -14,7 +14,7 @@ class BnbFunction:
         self._mlil_function = mlil_function
         self.function_features = {
             'basic_block_count': 0,  # number of basic blocks in the function
-            'number_of_args': 0,  # number of function arguments. equals -1 if the function is variadic
+            'number_of_args': 0,     # number of function arguments. equals -1 if the function is variadic
             'bnb_basic_blocks': [],  # A list containing all BnbBasicBlock objects in the function
         }
 
@@ -35,6 +35,7 @@ class BnbFunction:
         bb_object_list = []
 
         for basic_block in self._mlil_function:
+ #           if basic_block.length > 1:
             bnb_bb = BnbBasicBlock(basic_block)
             bb_object_list.append(bnb_bb)
 
