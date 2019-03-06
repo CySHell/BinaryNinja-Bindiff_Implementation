@@ -1,5 +1,4 @@
-import itertools
-
+import pprint
 
 class TraceletsFunc:
     """
@@ -29,16 +28,37 @@ class TraceletsFunc:
             return 0
 
         for bb in bb_in_func:
-            self.tracelet_list.extend(self._extract(bb))
+            self._extract(bb, self.tracelet_block_limit, list())
 
-    def _extract(self, bb):
-        curr_tracelet_len = self.tracelet_block_limit
-        print(bb)
-        if curr_tracelet_len == 1 or bb.outgoing_edges is None:
-            return [bb]
+        return self.tracelet_list
+
+    def _extract(self, bb, curr_tracelet_len, temp_list):
+        temp_list.append(bb)
+        if curr_tracelet_len == 1 or not bb.outgoing_edges:
+            tracelet_instruction_list = self._extract_instructions(temp_list)
+            self.tracelet_list.append(list(tracelet_instruction_list))
+            return
         else:
             for out_edge in bb.outgoing_edges:
-                return itertools.product([bb], self._extract(out_edge.target))
+                self._extract(out_edge.target, curr_tracelet_len - 1, temp_list)
+                temp_list.pop()
 
+    def _extract_instructions(self, temp_list):
+        """
+        receives a list of basic blocks that forms a tracelet, and extracts all the relevant instructions.
+        removes the last instruction from any block, due to it probably being a control flow instruction.
+        TODO: add a check for relevant IL_OP of control flow instructions, instead of just removing the last instruction
+        :param temp_list: (LIST) a list of mlil basic blocks comprising the tracelet
+        :return: (LIST) single list of all relevant instructions
+        """
+        instr_list = []
+        for bb in temp_list:
+            for index in range(bb.start, bb.end):
+                instr_list.append(self.func[index])
+            # remove the last instruction, it is probably a control flow instruction
+            instr_list.pop()
+        return instr_list
 
-print(TraceletsFunc(current_mlil, 3).extract_tracelets())
+TL = TraceletsFunc(current_mlil, 4)
+TL.extract_tracelets()
+pprint.pprint(TL.tracelet_list[0])
