@@ -52,12 +52,35 @@ class TraceletsFunc:
         :return: (LIST) single list of all relevant instructions
         """
         instr_list = []
+        temp = []
         for bb in temp_list:
             for index in range(bb.start, bb.end):
-                instr_list.append(self.func[index])
+                # normalize the instruction tokens for comparison
+                for token in self.func[index].tokens:
+                    temp.append(self._normalize_token(str(token.value)))
             # remove the last instruction, it is probably a control flow instruction
-            instr_list.pop()
+                instr_list.append(temp)
+
+            if instr_list:
+                instr_list.pop()
+
         return instr_list
+
+    def _normalize_token(self, token):
+        """
+        receives a token from an mlil instruction and normalizes it for comparison purposes
+        :param token: (STR) the string to normalize
+        :return: (STR): normalized form
+        """
+
+        # is the element in the instruction a hexdecimal literal? (i.e 0x43432534)
+        if token.startswith('0x'):
+            token = 'LITERAL'
+
+        # remove traces of SSA form
+        token = token.split('_')[0]
+
+        return token
 
 TL = TraceletsFunc(current_mlil, 4)
 TL.extract_tracelets()
