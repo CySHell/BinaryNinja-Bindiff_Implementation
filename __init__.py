@@ -1,16 +1,15 @@
 from binaryninja import *
-from bindiff.BnbFunction import *
-
+#from .Matchers.Tracelet_Matcher import Data_Types_and_Constants, Normalization_Techniques, Tracelet_Matching
+from .Matchers.Tracelet_Matcher.Tracelet_Matching import *
+from .Matchers.Tracelet_Matcher.Normalization_Techniques import *
+from .Matchers.Tracelet_Matcher.Data_Types_and_Constants import *
 
 
 def main(bv):
-    function_list = []
-    path = 'C:\\Users\\user\\Downloads\\BNB_output.txt'
+    for f in bv:
+        trace_list = extract_tracelets(f.medium_level_il, 3)
+        for TL in trace_list:
+            print(normalize_instructions(TL))
 
-    for func in bv.functions:
-        function_list.append(BnbFunction(func.mlil))
-
-    with open(path,'w') as file:
-        file.write(str(function_list))
 
 PluginCommand.register("BNB - BinDja", "BNB - Bindiff Implementation for Binja", main)
