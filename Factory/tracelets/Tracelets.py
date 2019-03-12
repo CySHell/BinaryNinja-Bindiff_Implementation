@@ -60,6 +60,7 @@ class TraceletsFunc:
                     temp.append(self._normalize_token(str(token.value)))
             # remove the last instruction, it is probably a control flow instruction
                 instr_list.append(temp)
+                temp = []
 
             if instr_list:
                 instr_list.pop()
