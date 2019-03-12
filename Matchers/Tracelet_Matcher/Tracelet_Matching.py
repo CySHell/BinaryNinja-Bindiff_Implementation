@@ -67,7 +67,8 @@ def normalize_tracelet(raw_tracelet):
     for bb in raw_tracelet:
         for instruction in bb:
             operations, operands = Normalization_Techniques.normalize_single_instruction(instruction)
-            tracelet.add_operation(operations)
-            tracelet.add_operands(operands)
+            if operations and operands:
+                tracelet.add_operation(operations)
+                tracelet.add_operands(operands)
 
     return tracelet

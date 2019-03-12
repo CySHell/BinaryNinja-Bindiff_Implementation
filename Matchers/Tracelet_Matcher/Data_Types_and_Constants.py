@@ -21,6 +21,12 @@ class Tracelet(RecordClass):
     def add_operands(self, operand):
         self.operands.append(operand)
 
+    def add_string(self, string):
+        # receive a python string and pack it into the operands bit stream.
+        # This is useful for things like imported functions that have a symbol
+        for char in string:
+            self.operands.append(BitArray(uint=int(ord(char)), length=7))
+
 
 class TracedFunction(RecordClass):
     """
@@ -46,3 +52,6 @@ REGISTER_NAMES = set()
 
 X86_REGISTER_NAMES = {'eax', 'ebx', 'ecx', 'edx', 'edi', 'esi', 'ebp', 'esp', 'eip'}
 REGISTER_NAMES.update(X86_REGISTER_NAMES)
+
+# MLIL_IF = 57 , MLIL_UNIMPL: 81, MLIL_UNIMPL_MEM = 82, MLIL_JUMP = 48, MLIL_JUMP_TO = 49
+UNDESIRED_MLIL_OPERATIONS = {81, 57, 82, 48, 49}
