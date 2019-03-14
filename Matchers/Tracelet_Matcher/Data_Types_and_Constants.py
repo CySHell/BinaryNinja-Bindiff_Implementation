@@ -1,43 +1,74 @@
-from recordclass import RecordClass
 from bitstring import BitArray
+from . import Tracelet_Matching
 import pprint
+import hashlib
 
 
 ########################################################################################################################
 #                                              DATA TYPES                                                              #
 ########################################################################################################################
 
-class Tracelet(RecordClass):
+class Tracelet:
     """
     Describes a single Tracelet (tuple of normalized MLIL basic blocks) as a series of mlil operations and
     operand types, represented as a bit stream.
     """
-    operations: BitArray = BitArray()
-    operands: BitArray = BitArray()
+    def __init__(self):
+        self.operations: BitArray = BitArray()
+        self.operands: BitArray = BitArray()
 
     def add_operation(self, operation):
+        print("Adding Operation: ", operation)
         self.operations.append(operation)
 
     def add_operands(self, operand):
+        print("Adding Operands: ", operand)
         self.operands.append(operand)
 
     def add_string(self, string):
         # receive a python string and pack it into the operands bit stream.
         # This is useful for things like imported functions that have a symbol
+        print("Adding string: ", string)
         for char in string:
             self.operands.append(BitArray(uint=int(ord(char)), length=7))
 
 
-class TracedFunction(RecordClass):
+class TracedFunction:
     """
     Describes a single function
     """
-    raw_file_offset: int = None  # raw offset of the function in the containing file
-    filename: str = ''  # the name of the containing file
-    name: str = ''  # hash of the filename and raw_file_offset
-    tracelets: list = []  # a list of all Tracelet objects within the function
+
+    def __init__(self, mlil_function, tracelet_length = 3):
+        """
+        receives a mlil_function object and populates it with all Tracelet information.
+        Returns the object
+        :param mlil_function: (MLIL_FUNCTION) function to parse
+        :param tracelet_length: (INT) how many basic blocks in a tracelet
+        :return: sucess: (BOOLEAN) True if successful and False if failed to populate
+        """
+        self.tracelet_length: int = tracelet_length
+        self.mlil_function = mlil_function
+        self.bv = mlil_function.source_function.view
+        # the name of the containing file
+        self.filename: str = self.bv.file.filename
+        # raw offset of the function in the containing file
+        self.raw_file_offset: int = self.mlil_function.source_function.start - self.bv.start
+        # md5 hash of the filename and raw_file_offset
+        self.name = hashlib.md5((self.filename + str(self.raw_file_offset)).encode()).hexdigest()
+        # a list of all Tracelet objects within the function
+        self.tracelets: list = []
+        # extract all tracelets from the function
+        trace_list = Tracelet_Matching.extract_tracelets(self.mlil_function, tracelet_length)
+
+        # populate the tracelets list with the normalized tracelets
+        for TL in trace_list:
+            tracelet = Tracelet_Matching.normalize_tracelet(TL)
+            self.tracelets.append(tracelet)
+
+        print("FINISHED DEFINING FUNCTION \n")
 
     def pretty_print(self):
+        print("FUNCTION NAME: ", self.name)
         for tracelet in self.tracelets:
             print("OPERATIONS: ")
             pprint.pprint(tracelet.operations)

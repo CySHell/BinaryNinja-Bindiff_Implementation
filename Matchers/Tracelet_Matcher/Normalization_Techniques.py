@@ -27,17 +27,22 @@ def normalize_single_instruction(mlil_instruction):
         nonlocal operations
 
         op_enum = oper.operation.value
-        if op_enum in UNDESIRED_MLIL_OPERATIONS:
-            return None, None
+        #if op_enum in UNDESIRED_MLIL_OPERATIONS:
+        #    return None, None
         # calling a function from the import table
         # <MediumLevelILOperation.MLIL_IMPORT: 17>
-        if op_enum is 17:
-            oper.tokens[0]
-        operations.append(f'0b{oper.operation.value:07b}')
+        #if op_enum is 17:
+        #    oper.tokens[0]
+        print("add operation: ", oper, " ",op_enum)
+        operations.append(f'0b{op_enum:07b}')
 
     def add_operand(var):
-        # found an MLIL Operand, add its source type enum (register, stack var, flag etc) to bit repr.
+        # found an MLIL Operand, add its source type enum to bit repr.
         nonlocal operands
+        # StackVariableSourceType = 0
+        # RegisterVariableSourceType = 1
+        # FlagVariableSourceType = 2
+        print("add operand: ", var, " ", var.source_type.value)
         operands.append(f'0b{var.source_type.value:02b}')
 
     def unpack_il_instruction(instruction):
@@ -47,7 +52,9 @@ def normalize_single_instruction(mlil_instruction):
 
     def add_literal(_):
         nonlocal operands
-        operands.append(f'0b{3:02b}')
+        # Literal is encoded as enum 3 (binary 0b11)
+        print("Adding LITERAL")
+        operands.append(f'0b11')
 
 
     parse_functions = {
