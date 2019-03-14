@@ -1,5 +1,6 @@
 from bitstring import BitArray
 from .Data_Types_and_Constants import *
+from binaryninja import *
 
 ########################################################################################################################
 #                           SINGLE INSTRUCTION NORMALIZATION TECHNIQUES                                                #
@@ -13,6 +14,7 @@ a normalized state strips away variable names, and only leaves operation enum an
 def normalize_single_instruction(mlil_instruction):
     operations = BitArray()
     operands = BitArray()
+    symbols = BitArray()
 
     parsing_stack = [mlil_instruction]
 
@@ -27,14 +29,21 @@ def normalize_single_instruction(mlil_instruction):
         nonlocal operations
 
         op_enum = oper.operation.value
-        #if op_enum in UNDESIRED_MLIL_OPERATIONS:
-        #    return None, None
-        # calling a function from the import table
-        # <MediumLevelILOperation.MLIL_IMPORT: 17>
-        #if op_enum is 17:
-        #    oper.tokens[0]
-        print("add operation: ", oper, " ",op_enum)
-        operations.append(f'0b{op_enum:07b}')
+        # undesired mlil operations mean the whole instruction is bad, do not parse the instruction.
+        if op_enum in UNDESIRED_MLIL_OPERATIONS:
+            un_parse_instruction()
+        else:
+            # calling a function from the import table
+            # <MediumLevelILOperation.MLIL_IMPORT: 17>
+            if op_enum is 17:
+                if isinstance(mlil_instruction.dest, binaryninja.mediumlevelil.MediumLevelILInstruction):
+                    import_addr = mlil_instruction.dest.value.value
+                    add_symbol(mlil_instruction.function.source_function.view.get_symbol_at(import_addr))
+                else:
+                    if isinstance(mlil_instruction.dest, binaryninja.function.Variable):
+                        add_operand(mlil_instruction.dest)
+            else:
+                operations.append(f'0b{op_enum:07b}')
 
     def add_operand(var):
         # found an MLIL Operand, add its source type enum to bit repr.
@@ -42,7 +51,6 @@ def normalize_single_instruction(mlil_instruction):
         # StackVariableSourceType = 0
         # RegisterVariableSourceType = 1
         # FlagVariableSourceType = 2
-        print("add operand: ", var, " ", var.source_type.value)
         operands.append(f'0b{var.source_type.value:02b}')
 
     def unpack_il_instruction(instruction):
@@ -53,9 +61,23 @@ def normalize_single_instruction(mlil_instruction):
     def add_literal(_):
         nonlocal operands
         # Literal is encoded as enum 3 (binary 0b11)
-        print("Adding LITERAL")
         operands.append(f'0b11')
 
+    def add_symbol(Symbol):
+        """
+        Receive a symbol and pack it into a bitstream
+        :param Symbol: (Symbol) a binary ninja Symbol object
+        """
+        nonlocal symbols
+        for char in Symbol.raw_name:
+            symbols.append(BitArray(uint=int(ord(char)), length=7))
+
+    def un_parse_instruction():
+        nonlocal parsing_stack
+        parsing_stack = []
+        symbols.clear()
+        operands.clear()
+        operations.clear()
 
     parse_functions = {
         "<class 'binaryninja.mediumlevelil.MediumLevelILInstruction'>": unpack_il_instruction,
@@ -71,7 +93,7 @@ def normalize_single_instruction(mlil_instruction):
         to_parse = parsing_stack.pop()
         parse_functions[str(type(to_parse))](to_parse)
 
-    return operations, operands
+    return operations, operands, symbols
 
 ########################################################################################################################
 #                           list of normalization functions per IL_OPERATION                                           #

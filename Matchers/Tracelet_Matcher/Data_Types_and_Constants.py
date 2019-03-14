@@ -13,24 +13,22 @@ class Tracelet:
     Describes a single Tracelet (tuple of normalized MLIL basic blocks) as a series of mlil operations and
     operand types, represented as a bit stream.
     """
+
     def __init__(self):
         self.operations: BitArray = BitArray()
         self.operands: BitArray = BitArray()
+        self.symbols: BitArray = BitArray()
 
     def add_operation(self, operation):
-        print("Adding Operation: ", operation)
         self.operations.append(operation)
 
     def add_operands(self, operand):
-        print("Adding Operands: ", operand)
         self.operands.append(operand)
 
-    def add_string(self, string):
+    def add_symbol(self, symbol):
         # receive a python string and pack it into the operands bit stream.
         # This is useful for things like imported functions that have a symbol
-        print("Adding string: ", string)
-        for char in string:
-            self.operands.append(BitArray(uint=int(ord(char)), length=7))
+        self.symbols.append(symbol)
 
 
 class TracedFunction:
@@ -38,7 +36,7 @@ class TracedFunction:
     Describes a single function
     """
 
-    def __init__(self, mlil_function, tracelet_length = 3):
+    def __init__(self, mlil_function, tracelet_length=3):
         """
         receives a mlil_function object and populates it with all Tracelet information.
         Returns the object
@@ -65,16 +63,34 @@ class TracedFunction:
             tracelet = Tracelet_Matching.normalize_tracelet(TL)
             self.tracelets.append(tracelet)
 
-        print("FINISHED DEFINING FUNCTION \n")
-
     def pretty_print(self):
         print("FUNCTION NAME: ", self.name)
-        for tracelet in self.tracelets:
+        for index in range(len(self.tracelets)):
+            print("INSTRUCTION index #", index)
             print("OPERATIONS: ")
-            pprint.pprint(tracelet.operations)
+            pprint.pprint(self.tracelets[index].operations)
             print("OPERANDS: ")
-            pprint.pprint(tracelet.operands)
+            pprint.pprint(self.tracelets[index].operands)
+            print("SYMBOLS: ")
+            pprint.pprint(self.tracelets[index].symbols)
 
+    def dump_to_file(self, filename):
+        with open(filename, 'bw') as file:
+            file.write(self.name.encode())
+            for index in range(len(self.tracelets)):
+                pprint.pprint(self.tracelets[index].operations.encode(), file)
+                pprint.pprint(self.tracelets[index].operands.encode(), file)
+                pprint.pprint(self.tracelets[index].symbols.encode(), file)
+
+    def is_empty(self):
+        """
+        check if the function is populated with relevant tracelets
+        :return: sucess: (BOOLEAN)
+        """
+        if self.tracelets:
+            return True
+        else:
+            return False
 
 ########################################################################################################################
 #                                              CONSTANTS                                                               #
