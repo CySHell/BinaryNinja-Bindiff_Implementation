@@ -1,7 +1,8 @@
+from typing import Set
 from bitstring import BitArray
-from . import Tracelet_Matching
+from . import Tracelet_Matching, DB
 import pprint
-import hashlib
+import xxhash
 
 
 ########################################################################################################################
@@ -18,17 +19,25 @@ class Tracelet:
         self.operations: BitArray = BitArray()
         self.operands: BitArray = BitArray()
         self.symbols: BitArray = BitArray()
+        self._hash = xxhash.xxh32()
+        self.hash = 0
 
     def add_operation(self, operation):
         self.operations.append(operation)
+        self._hash.update(operation.tobytes())
+        self.hash = self._hash.intdigest()
 
     def add_operands(self, operand):
         self.operands.append(operand)
+        self._hash.update(operand.tobytes())
+        self.hash = self._hash.intdigest()
 
     def add_symbol(self, symbol):
         # receive a python string and pack it into the operands bit stream.
         # This is useful for things like imported functions that have a symbol
         self.symbols.append(symbol)
+        self._hash.update(symbol.tobytes())
+        self.hash = self._hash.intdigest()
 
 
 class TracedFunction:
@@ -51,8 +60,8 @@ class TracedFunction:
         self.filename: str = self.bv.file.filename
         # raw offset of the function in the containing file
         self.raw_file_offset: int = self.mlil_function.source_function.start - self.bv.start
-        # md5 hash of the filename and raw_file_offset
-        self.name = hashlib.md5((self.filename + str(self.raw_file_offset)).encode()).hexdigest()
+        # TODO: decide on a naming convention for functions
+        self.name = self.filename
         # a list of all Tracelet objects within the function
         self.tracelets: list = []
         # extract all tracelets from the function
@@ -74,15 +83,14 @@ class TracedFunction:
             print("SYMBOLS: ")
             pprint.pprint(self.tracelets[index].symbols)
 
-    def dump_to_file(self, filename):
-        with open(filename, 'bw') as file:
-            file.write(self.name.encode())
-            for index in range(len(self.tracelets)):
-                pprint.pprint(self.tracelets[index].operations.encode(), file)
-                pprint.pprint(self.tracelets[index].operands.encode(), file)
-                pprint.pprint(self.tracelets[index].symbols.encode(), file)
+    def dump_to_db(self):
+        """
+        :return: success: (BOOLEAN) True if successfully inserted, otherwise False.
+        """
+        driver = DB.init_db()
+        DB.populate_traced_function(self, driver)
 
-    def is_empty(self):
+    def is_not_empty(self):
         """
         check if the function is populated with relevant tracelets
         :return: sucess: (BOOLEAN)
@@ -91,6 +99,7 @@ class TracedFunction:
             return True
         else:
             return False
+
 
 ########################################################################################################################
 #                                              CONSTANTS                                                               #
@@ -101,4 +110,4 @@ X86_REGISTER_NAMES = {'eax', 'ebx', 'ecx', 'edx', 'edi', 'esi', 'ebp', 'esp', 'e
 REGISTER_NAMES.update(X86_REGISTER_NAMES)
 
 # MLIL_IF = 57 , MLIL_UNIMPL: 81, MLIL_UNIMPL_MEM = 82, MLIL_JUMP = 48, MLIL_JUMP_TO = 49
-UNDESIRED_MLIL_OPERATIONS = {81, 57, 82, 48, 49}
+UNDESIRED_MLIL_OPERATIONS: Set[int] = {81, 57, 82, 48, 49}

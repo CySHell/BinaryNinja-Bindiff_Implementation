@@ -2,7 +2,9 @@
   <dictionary name="user">
     <words>
       <w>addr</w>
+      <w>binaryview</w>
       <w>bindja</w>
+      <w>disasm</w>
       <w>mlil</w>
       <w>tracelet</w>
       <w>tracelets</w>

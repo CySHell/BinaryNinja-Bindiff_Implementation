@@ -1,6 +1,6 @@
-from bitstring import BitArray
-from .Data_Types_and_Constants import *
 from binaryninja import *
+from . import Data_Types_and_Constants
+from bitstring import BitArray
 
 ########################################################################################################################
 #                           SINGLE INSTRUCTION NORMALIZATION TECHNIQUES                                                #
@@ -30,7 +30,7 @@ def normalize_single_instruction(mlil_instruction):
 
         op_enum = oper.operation.value
         # undesired mlil operations mean the whole instruction is bad, do not parse the instruction.
-        if op_enum in UNDESIRED_MLIL_OPERATIONS:
+        if op_enum in Data_Types_and_Constants.UNDESIRED_MLIL_OPERATIONS:
             un_parse_instruction()
         else:
             # calling a function from the import table
@@ -43,7 +43,7 @@ def normalize_single_instruction(mlil_instruction):
                     if isinstance(mlil_instruction.dest, binaryninja.function.Variable):
                         add_operand(mlil_instruction.dest)
             else:
-                operations.append(f'0b{op_enum:07b}')
+                operations.append(f'0b{op_enum:08b}')
 
     def add_operand(var):
         # found an MLIL Operand, add its source type enum to bit repr.
@@ -51,7 +51,7 @@ def normalize_single_instruction(mlil_instruction):
         # StackVariableSourceType = 0
         # RegisterVariableSourceType = 1
         # FlagVariableSourceType = 2
-        operands.append(f'0b{var.source_type.value:02b}')
+        operands.append(f'0b{var.source_type.value:04b}')
 
     def unpack_il_instruction(instruction):
         nonlocal parsing_stack
@@ -61,7 +61,7 @@ def normalize_single_instruction(mlil_instruction):
     def add_literal(_):
         nonlocal operands
         # Literal is encoded as enum 3 (binary 0b11)
-        operands.append(f'0b11')
+        operands.append(f'0b{3:04b}')
 
     def add_symbol(Symbol):
         """
@@ -70,7 +70,7 @@ def normalize_single_instruction(mlil_instruction):
         """
         nonlocal symbols
         for char in Symbol.raw_name:
-            symbols.append(BitArray(uint=int(ord(char)), length=7))
+            symbols.append(BitArray(uint=int(ord(char)), length=8))
 
     def un_parse_instruction():
         nonlocal parsing_stack
@@ -87,6 +87,7 @@ def normalize_single_instruction(mlil_instruction):
         "<class 'binaryninja.function.Variable'>": add_operand,
         "<type 'long'>": add_literal,
         "<class 'int'>": add_literal,
+        "<class 'float'>": add_literal
     }
 
     while parsing_stack:
