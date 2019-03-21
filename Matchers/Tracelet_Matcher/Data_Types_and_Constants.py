@@ -62,10 +62,13 @@ class TracedFunction:
         self.raw_file_offset: int = self.mlil_function.source_function.start - self.bv.start
         # TODO: decide on a naming convention for functions
         self.name = self.filename
+        # arguments enum BitArray
+        self.arguments: BitArray = self.extract_arguments()
         # a list of all Tracelet objects within the function
         self.tracelets: list = []
+
         # extract all tracelets from the function
-        trace_list = Tracelet_Matching.extract_tracelets(self.mlil_function, tracelet_length)
+        trace_list: list = Tracelet_Matching.extract_tracelets(self.mlil_function, tracelet_length)
 
         # populate the tracelets list with the normalized tracelets
         for TL in trace_list:
@@ -100,6 +103,20 @@ class TracedFunction:
         else:
             return False
 
+    def extract_arguments(self):
+        """
+        create a BitArray of all function argument types, as enums
+        :return: arg_bitarray: (BitArray)
+        """
+        arg_bitarray = BitArray()
+
+        for var in self.mlil_function.source_function.parameter_vars:
+            # StackVariableSourceType = 0
+            # RegisterVariableSourceType = 1
+            # FlagVariableSourceType = 2
+            arg_bitarray.append(f'0b{var.source_type.value:04b}')
+
+        return arg_bitarray
 
 ########################################################################################################################
 #                                              CONSTANTS                                                               #
